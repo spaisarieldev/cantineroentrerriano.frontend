@@ -1,0 +1,137 @@
+<div class="page-head">
+  <div>
+    <h1>{{ saludo }}, {{ auth.usuario()?.nombre }}</h1>
+    <p>Esto es lo que está pasando en la tienda.</p>
+  </div>
+  <div class="row">
+    <button type="button" class="btn btn-sm" (click)="cargar()" [disabled]="cargando()"><lucide-icon [img]="i.RefreshCw" [size]="16" /> Actualizar</button>
+    <a routerLink="/admin/productos/nuevo" class="btn btn-primary btn-sm"><lucide-icon [img]="i.Plus" [size]="16" /> Nuevo producto</a>
+  </div>
+</div>
+
+@if (error()) {
+  <div class="alert alert-danger" role="alert">
+    <lucide-icon [img]="i.AlertCircle" [size]="20" />
+    <p><strong>No pudimos cargar el resumen</strong>Revisá que la API esté corriendo y probá de nuevo.</p>
+  </div>
+}
+
+<!-- KPIs -->
+<div class="kpis">
+  @if (cargando() && !kpis().length) {
+    @for (s of [1, 2, 3, 4]; track s) { <div class="kpi skeleton" style="height:128px"></div> }
+  } @else {
+    @for (k of kpis(); track k.titulo) {
+      <a class="kpi" [class]="'kpi ' + k.tono" [routerLink]="k.ruta" [queryParams]="k.query">
+        <span class="k-ico"><lucide-icon [img]="k.icono" [size]="20" /></span>
+        <span class="k-title">{{ k.titulo }}</span>
+        <strong class="k-val">{{ k.valor }}</strong>
+        <span class="k-det">{{ k.detalle }} <lucide-icon [img]="i.ArrowUpRight" [size]="14" /></span>
+      </a>
+    }
+  }
+</div>
+
+<div class="grid-2">
+  <!-- Gráfico de ventas -->
+  <section class="panel">
+    <div class="panel-head">
+      <h2>Ventas aprobadas · últimos 14 días</h2>
+      <span class="muted small">Por fecha del pedido</span>
+    </div>
+    <div class="panel-body">
+      @if (cargando() && !dias().length) {
+        <div class="skeleton" style="height:240px"></div>
+      } @else {
+        <div class="chart" role="img" [attr.aria-label]="'Ventas de los últimos 14 días: total ' + (totalPeriodo() | ars)">
+          <div class="y-axis" aria-hidden="true">
+            @for (m of escala().marcas; track $index) { <span>{{ m | ars }}</span> }
+          </div>
+          <div class="plot" (mouseleave)="hover.set(null)">
+            <div class="gridlines" aria-hidden="true"><span></span><span></span><span></span></div>
+            @for (d of dias(); track d.clave; let k = $index) {
+              <div class="col" (mouseenter)="hover.set(k)" (focus)="hover.set(k)" (blur)="hover.set(null)" tabindex="0"
+                   [attr.aria-label]="(d.fecha | date: 'EEEE d MMM') + ': ' + (d.total | ars) + ', ' + d.pedidos + ' pedidos'">
+                <div class="bar" [class.zero]="d.total === 0" [class.dim]="hover() !== null && hover() !== k" [style.height.%]="altura(d.total)"></div>
+                <span class="x" [class.show]="k % 2 === 1 || k === dias().length - 1" aria-hidden="true">{{ d.fecha | date: 'd/M' }}</span>
+                @if (hover() === k) {
+                  <div class="tip" [class.left]="k > dias().length - 4" role="tooltip">
+                    <span class="t-date">{{ d.fecha | date: "EEE d 'de' MMMM" }}</span>
+                    <strong>{{ d.total | ars }}</strong>
+                    <span>{{ d.pedidos }} {{ d.pedidos === 1 ? 'pedido' : 'pedidos' }}</span>
+                  </div>
+                }
+              </div>
+            }
+          </div>
+        </div>
+        <table class="sr-only">
+          <caption>Ventas aprobadas por día</caption>
+          <thead><tr><th>Día</th><th>Total</th><th>Pedidos</th></tr></thead>
+          <tbody>
+            @for (d of dias(); track d.clave) { <tr><td>{{ d.fecha | date: 'd/M/yyyy' }}</td><td>{{ d.total | ars }}</td><td>{{ d.pedidos }}</td></tr> }
+          </tbody>
+        </table>
+      }
+    </div>
+  </section>
+
+  <!-- Stock bajo -->
+  <section class="panel">
+    <div class="panel-head">
+      <h2>Stock más bajo</h2>
+      <a routerLink="/admin/productos" class="small link">Ver productos</a>
+    </div>
+    @if (cargando() && !stockBajo().length) {
+      <div class="panel-body stack">@for (s of [1, 2, 3]; track s) { <div class="skeleton" style="height:44px"></div> }</div>
+    } @else if (stockBajo().length === 0) {
+      <p class="panel-body muted">No hay productos activos.</p>
+    } @else {
+      <ul class="stock-list">
+        @for (p of stockBajo(); track p.id) {
+          <li>
+            <a [routerLink]="['/admin/productos', p.id]">
+              <span class="s-name"><strong>{{ p.nombre }}</strong><small>{{ p.marcaNombre }}</small></span>
+              <span class="s-val" [class.crit]="p.packsDisponibles === 0" [class.warn]="p.packsDisponibles > 0 && p.packsDisponibles <= 3">
+                @if (p.packsDisponibles === 0) { <lucide-icon [img]="i.Ban" [size]="14" /> }
+                @else if (p.packsDisponibles <= 3) { <lucide-icon [img]="i.AlertTriangle" [size]="14" /> }
+                {{ p.stock }} u · {{ p.packsDisponibles }} packs
+              </span>
+            </a>
+          </li>
+        }
+      </ul>
+    }
+  </section>
+</div>
+
+<!-- Últimos pedidos -->
+<section class="panel recent">
+  <div class="panel-head">
+    <h2>Últimos pedidos</h2>
+    <a routerLink="/admin/pedidos" class="small link">Ver todos</a>
+  </div>
+  <div class="table-wrap">
+    <table class="table">
+      <thead><tr><th>#</th><th>Fecha</th><th>Cliente</th><th>Estado</th><th>Envío</th><th class="num">Total</th></tr></thead>
+      <tbody>
+        @if (cargando() && !recientes().length) {
+          @for (s of [1, 2, 3]; track s) { <tr class="table-skel"><td colspan="6"><div class="skeleton"></div></td></tr> }
+        } @else {
+          @for (p of recientes(); track p.id) {
+            <tr class="clickable" [routerLink]="['/admin/pedidos', p.id]">
+              <td><strong>#{{ p.id }}</strong></td>
+              <td>{{ p.fecha | date: 'dd/MM HH:mm' }}</td>
+              <td>{{ p.clienteNombre }}</td>
+              <td><app-estado-pedido [estado]="p.estado" /> @if (p.requiereRevision) { <span class="badge badge-danger">Revisar</span> }</td>
+              <td><app-estado-envio [estado]="p.estadoEnvio" /></td>
+              <td class="num"><strong>{{ p.total | ars }}</strong></td>
+            </tr>
+          } @empty {
+            <tr><td colspan="6" class="muted">Todavía no hay pedidos.</td></tr>
+          }
+        }
+      </tbody>
+    </table>
+  </div>
+</section>

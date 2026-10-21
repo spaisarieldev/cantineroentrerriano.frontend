@@ -1,0 +1,212 @@
+<div class="page-head">
+  <div>
+    <a routerLink="/admin/productos" class="back"><lucide-icon [img]="i.ArrowLeft" [size]="16" /> Productos</a>
+    <h1>{{ esNuevo() ? 'Nuevo producto' : (producto()?.nombre ?? 'Producto') }}</h1>
+    @if (producto(); as p) {
+      <div class="row meta"><app-activo-badge [activo]="p.activo" /><span class="muted small">Creado {{ p.fechaCreacion | date: 'dd/MM/yyyy' }}@if (p.fechaModificacion) { · editado {{ p.fechaModificacion | date: 'dd/MM/yyyy HH:mm' }} }</span></div>
+    }
+  </div>
+  @if (producto(); as p) {
+    <div class="row">
+      @if (p.activo) { <a [routerLink]="['/producto', p.id]" target="_blank" class="btn btn-sm"><lucide-icon [img]="i.ExternalLink" [size]="16" /> Ver en la tienda</a> }
+      <button type="button" class="btn btn-sm" (click)="toggleActivo()"><lucide-icon [img]="i.Power" [size]="16" /> {{ p.activo ? 'Desactivar' : 'Activar' }}</button>
+    </div>
+  }
+</div>
+
+@if (cargando()) {
+  <div class="grid-2"><div class="skeleton" style="height:480px"></div><div class="skeleton" style="height:300px"></div></div>
+} @else {
+  <div class="grid-2">
+    <!-- Datos -->
+    <form class="panel" [formGroup]="form" (ngSubmit)="guardar()" novalidate>
+      <div class="panel-head"><h2>Datos del producto</h2></div>
+      <div class="panel-body form-grid">
+        <div class="field full">
+          <label for="nombre">Nombre</label>
+          <input id="nombre" class="input" formControlName="nombre" placeholder="Ej: Negroni" />
+          @if (errores()['nombre']) { <span class="error">{{ errores()['nombre'] }}</span> }
+          @else if (invalido('nombre')) { <span class="error">Ingresá un nombre (máx. 200 caracteres).</span> }
+        </div>
+
+        <div class="field full">
+          <label for="descripcion">Descripción <span class="opt">(opcional)</span></label>
+          <textarea id="descripcion" class="textarea" formControlName="descripcion" placeholder="Sabor, graduación, cómo servirlo…"></textarea>
+        </div>
+
+        <div class="field">
+          <label for="marca">Marca / línea</label>
+          <select id="marca" class="select" formControlName="marcaId">
+            <option [ngValue]="null" disabled>Elegí una marca</option>
+            @for (m of marcas(); track m.id) { <option [ngValue]="m.id" [disabled]="!m.activo">{{ m.nombre }}{{ m.activo ? '' : ' (inactiva)' }}</option> }
+          </select>
+          @if (errores()['marcaId']) { <span class="error">{{ errores()['marcaId'] }}</span> }
+          @else if (invalido('marcaId')) { <span class="error">Elegí una marca.</span> }
+          @if (!marcas().length) { <span class="hint">No hay marcas. <a routerLink="/admin/marcas">Creá una</a>.</span> }
+        </div>
+
+        <div class="field">
+          <label for="variante">Variante <span class="opt">(opcional)</span></label>
+          <select id="variante" class="select" formControlName="varianteId">
+            <option [ngValue]="null">Sin variante</option>
+            @for (v of variantes(); track v.id) { <option [ngValue]="v.id" [disabled]="!v.activo">{{ v.nombre }}{{ v.activo ? '' : ' (inactiva)' }}</option> }
+          </select>
+          @if (errores()['varianteId']) { <span class="error">{{ errores()['varianteId'] }}</span> }
+        </div>
+
+        <div class="field">
+          <label for="precio">Precio por unidad</label>
+          <div class="money"><span>$</span><input id="precio" class="input" type="number" min="0" step="0.01" inputmode="decimal" formControlName="precioUnitario" /></div>
+          @if (errores()['precioUnitario']) { <span class="error">{{ errores()['precioUnitario'] }}</span> }
+          @else if (invalido('precioUnitario')) { <span class="error">Ingresá un precio válido.</span> }
+        </div>
+
+        <div class="field">
+          <label for="upp">Unidades por pack</label>
+          <input id="upp" class="input" type="number" min="1" step="1" formControlName="unidadesPorPack" />
+          <span class="hint">1 = se vende por unidad.</span>
+          @if (errores()['unidadesPorPack']) { <span class="error">{{ errores()['unidadesPorPack'] }}</span> }
+          @else if (invalido('unidadesPorPack')) { <span class="error">Tiene que ser 1 o más.</span> }
+        </div>
+
+        @if (esNuevo()) {
+          <div class="field">
+            <label for="stock">Stock inicial (unidades)</label>
+            <input id="stock" class="input" type="number" min="0" step="1" formControlName="stockInicial" />
+            <span class="hint">Después se ajusta con movimientos de stock.</span>
+            @if (errores()['stockInicial']) { <span class="error">{{ errores()['stockInicial'] }}</span> }
+          </div>
+        }
+
+        <div class="preview full">
+          <lucide-icon [img]="i.Package" [size]="20" />
+          <span>Precio del pack en la tienda</span>
+          <strong>{{ precioPack() | ars }}</strong>
+        </div>
+      </div>
+      <div class="form-actions">
+        <a routerLink="/admin/productos" class="btn btn-ghost">Cancelar</a>
+        <button type="submit" class="btn btn-primary" [disabled]="guardando() || (!esNuevo() && form.pristine)">
+          @if (guardando()) { <span class="spinner"></span> Guardando… } @else { <lucide-icon [img]="i.Check" [size]="18" /> {{ esNuevo() ? 'Crear producto' : 'Guardar cambios' }} }
+        </button>
+      </div>
+    </form>
+
+    <div class="side-col">
+      @if (esNuevo()) {
+        <div class="panel tip">
+          <div class="panel-body">
+            <lucide-icon [img]="i.Image" [size]="28" />
+            <h3>Fotos y stock</h3>
+            <p class="muted">Cuando crees el producto vas a poder subir hasta 8 fotos, elegir la principal y ajustar el stock con su historial.</p>
+          </div>
+        </div>
+      } @else if (producto()) { @let p = producto()!;
+        <!-- Stock -->
+        <section class="panel">
+          <div class="panel-head"><h2>Stock</h2></div>
+          <div class="panel-body">
+            <div class="stock-now">
+              <div><strong>{{ p.stock }}</strong><span>unidades</span></div>
+              <div><strong>{{ p.packsDisponibles }}</strong><span>packs disponibles</span></div>
+            </div>
+
+            <div class="adjust">
+              <div class="seg" role="radiogroup" aria-label="Tipo de movimiento">
+                <button type="button" role="radio" [attr.aria-checked]="ajuste().tipo === 'ingreso'" [class.on]="ajuste().tipo === 'ingreso'" (click)="setAjuste({ tipo: 'ingreso' })"><lucide-icon [img]="i.TrendingUp" [size]="16" /> Ingreso</button>
+                <button type="button" role="radio" [attr.aria-checked]="ajuste().tipo === 'egreso'" [class.on]="ajuste().tipo === 'egreso'" (click)="setAjuste({ tipo: 'egreso' })"><lucide-icon [img]="i.TrendingDown" [size]="16" /> Egreso</button>
+              </div>
+              <div class="adj-row">
+                <select class="select" aria-label="Motivo" [ngModel]="ajuste().motivoId" (ngModelChange)="setAjuste({ motivoId: $event })" [ngModelOptions]="{ standalone: true }">
+                  <option [ngValue]="null" disabled>Motivo…</option>
+                  @for (m of motivosManuales(); track m.id) { <option [ngValue]="m.id">{{ m.nombre }}</option> }
+                </select>
+                <input class="input qty" type="number" min="1" step="1" placeholder="Unidades" aria-label="Cantidad en unidades" [ngModel]="ajuste().cantidad" (ngModelChange)="setAjuste({ cantidad: $event })" [ngModelOptions]="{ standalone: true }" (keydown.enter)="aplicarAjuste()" />
+              </div>
+              @if (!motivosManuales().length) { <span class="hint">No hay motivos manuales. <a routerLink="/admin/motivos-stock">Creá uno</a> (ej: Venta feria, Catering).</span> }
+              @if (errorAjuste()) { <span class="error"><lucide-icon [img]="i.AlertCircle" [size]="14" /> {{ errorAjuste() }}</span> }
+              <button type="button" class="btn btn-dark btn-block" [disabled]="ajustando()" (click)="aplicarAjuste()">
+                @if (ajustando()) { <span class="spinner"></span> } Registrar {{ ajuste().tipo === 'ingreso' ? 'ingreso' : 'egreso' }}
+              </button>
+            </div>
+          </div>
+        </section>
+      }
+    </div>
+  </div>
+
+  @if (producto(); as p) {
+    <!-- Fotos -->
+    <section class="panel block">
+      <div class="panel-head">
+        <h2>Fotos <span class="muted count">{{ fotos().length }}/{{ maxFotos }}</span></h2>
+        <span class="muted small">La principal es la que se ve en la tienda. JPG, PNG o WEBP hasta 10 MB.</span>
+      </div>
+      <div class="panel-body">
+        <div class="photos">
+          @for (f of fotos(); track f.id; let k = $index) {
+            <figure class="photo" [class.main]="f.principal" @foto>
+              <img [src]="url(f)" [alt]="'Foto ' + (k + 1) + ' de ' + p.nombre" loading="lazy" />
+              @if (f.principal) { <span class="main-tag"><lucide-icon [img]="i.Star" [size]="12" /> Principal</span> }
+              <figcaption>
+                <button type="button" class="pb" (click)="mover(k, -1)" [disabled]="k === 0" aria-label="Mover a la izquierda"><lucide-icon [img]="i.ChevronLeft" [size]="16" /></button>
+                <button type="button" class="pb" (click)="marcarPrincipal(f)" [disabled]="f.principal" aria-label="Marcar como principal" title="Marcar como principal"><lucide-icon [img]="i.Star" [size]="16" /></button>
+                <button type="button" class="pb del" (click)="eliminarFoto(f)" aria-label="Eliminar foto" title="Eliminar"><lucide-icon [img]="i.Trash2" [size]="16" /></button>
+                <button type="button" class="pb" (click)="mover(k, 1)" [disabled]="k === fotos().length - 1" aria-label="Mover a la derecha"><lucide-icon [img]="i.ChevronRight" [size]="16" /></button>
+              </figcaption>
+            </figure>
+          }
+          @for (s of placeholders(); track $index) {
+            <div class="photo skeleton"></div>
+          }
+          @if (fotos().length + subiendo() < maxFotos) {
+            <label class="drop" [class.over]="arrastrando()" (dragover)="$event.preventDefault(); arrastrando.set(true)" (dragleave)="arrastrando.set(false)" (drop)="onDrop($event)">
+              <input type="file" accept="image/jpeg,image/png,image/webp" multiple (change)="onArchivos($event)" class="sr-only" />
+              <lucide-icon [img]="i.Upload" [size]="24" />
+              <strong>Subir fotos</strong>
+              <span>o arrastralas acá</span>
+            </label>
+          }
+        </div>
+        @if (sinPrincipal()) {
+          <p class="warn-note"><lucide-icon [img]="i.AlertTriangle" [size]="16" /> Ninguna foto es principal: en la tienda se muestra la primera. Marcá una con la estrella.</p>
+        }
+      </div>
+    </section>
+
+    <!-- Historial -->
+    <section class="panel block">
+      <div class="panel-head">
+        <h2>Historial de stock</h2>
+        <select class="select sm" aria-label="Filtrar por motivo" [ngModel]="movMotivo()" (ngModelChange)="movMotivo.set($event); movPage.set(1); cargarMovimientos()" [ngModelOptions]="{ standalone: true }">
+          <option [ngValue]="null">Todos los motivos</option>
+          @for (m of motivos(); track m.id) { <option [ngValue]="m.id">{{ m.nombre }}</option> }
+        </select>
+      </div>
+      <div class="table-wrap">
+        <table class="table">
+          <thead><tr><th>Fecha</th><th>Motivo</th><th class="num">Cantidad</th><th>Origen</th></tr></thead>
+          <tbody>
+            @for (m of movimientos()?.items ?? []; track m.id) {
+              <tr>
+                <td>{{ m.fecha | date: 'dd/MM/yyyy HH:mm' }}</td>
+                <td>{{ m.motivoNombre }} @if (m.motivoEsSistema) { <span class="badge no-dot">Sistema</span> }</td>
+                <td class="num"><strong [class.pos]="m.cantidad > 0" [class.neg]="m.cantidad < 0">{{ m.cantidad > 0 ? '+' : '' }}{{ m.cantidad }}</strong></td>
+                <td>
+                  @if (m.pedidoId) { <a [routerLink]="['/admin/pedidos', m.pedidoId]">Pedido #{{ m.pedidoId }}</a> }
+                  @else if (m.usuarioNombre) { <span>{{ m.usuarioNombre }}</span> }
+                  @else { <span class="muted">Sistema</span> }
+                </td>
+              </tr>
+            } @empty {
+              <tr><td colspan="4" class="muted">Sin movimientos.</td></tr>
+            }
+          </tbody>
+        </table>
+      </div>
+      @if (movimientos(); as d) {
+        <div class="panel-foot"><app-pagination [page]="d.page" [pageSize]="d.pageSize" [total]="d.total" (cambiar)="movPage.set($event); cargarMovimientos()" /></div>
+      }
+    </section>
+  }
+}

@@ -1,0 +1,118 @@
+:host { display: block; }
+
+.hero {
+  position: relative;
+  padding: clamp(8px, 2vw, 24px) 0 clamp(48px, 6vw, 80px);
+  overflow: hidden;
+  isolation: isolate;
+  background: var(--white);
+  color: var(--ink-900);
+}
+
+.inner { position: relative; display: flex; flex-direction: column; align-items: center; text-align: center; }
+
+/* ---------- Menú vertical lateral ---------- */
+.side {
+  display: none;
+  position: absolute; z-index: 2; left: clamp(16px, 2.6vw, 40px); top: 50%;
+  transform: translateY(-50%);
+  flex-direction: column; align-items: center; gap: 34px;
+  a {
+    writing-mode: vertical-rl; transform: rotate(180deg);
+    color: var(--ink-700); text-decoration: none; font-size: .72rem; font-weight: 500; letter-spacing: .08em;
+    transition: color var(--dur);
+    &:hover { color: var(--purple-700); }
+  }
+  .side-sep { width: 1px; height: 46px; background: var(--border-strong); }
+  .side-ig { font-weight: 700; text-transform: lowercase; }
+  @media (min-width: 1100px) { display: flex; }
+}
+
+/* ---------- Marca gigante en vertical ---------- */
+.watermark {
+  position: absolute; z-index: -1; right: clamp(-24px, -1vw, 0px); top: 50%;
+  transform: translateY(-50%);
+  writing-mode: vertical-rl;
+  font-size: clamp(4.5rem, 9vw, 8rem); font-weight: 800; line-height: .85; letter-spacing: .02em;
+  color: transparent;
+  -webkit-text-stroke: 1.5px #efeef3;
+  user-select: none; pointer-events: none;
+  will-change: transform;
+  @media (max-width: 899px) { display: none; }
+}
+
+/* ---------- Escenario: círculos + fotos ---------- */
+.stage {
+  --mx: 0; --my: 0;
+  position: relative;
+  // En pantallas bajas se achica para que el título y los botones entren sin scroll.
+  width: min(620px, 100%, max(300px, calc((100svh - var(--header-h) - 300px) * 1.55)));
+  aspect-ratio: 620 / 400;
+  margin-bottom: clamp(8px, 2vw, 20px);
+}
+
+// Capa con profundidad: se desplaza con el mouse sin interferir con GSAP.
+.stage > * {
+  position: absolute;
+  translate: calc(var(--mx) * 14px * var(--d, 1)) calc(var(--my) * 10px * var(--d, 1));
+  transition: translate 900ms var(--ease-out);
+}
+
+.c { border-radius: 50%; will-change: transform; }
+
+.c-ring {
+  width: 21%; aspect-ratio: 1; left: 22%; top: 2%;
+  // Anillo grueso violeta, con un corte blanco como en la referencia.
+  background: conic-gradient(from 20deg, var(--purple-700) 0 300deg, transparent 300deg 360deg);
+  -webkit-mask: radial-gradient(circle, transparent 54%, #000 55%);
+  mask: radial-gradient(circle, transparent 54%, #000 55%);
+}
+.c-ring-sm {
+  width: 9%; aspect-ratio: 1; left: 30%; bottom: 14%;
+  border: 3px solid var(--white); z-index: 1;
+}
+.c-coral {
+  width: 34%; aspect-ratio: 1; right: 18%; top: 24%;
+  background: radial-gradient(circle at 40% 34%, var(--white) 0 19%, var(--berry-600) 19.5%);
+}
+.c-sand {
+  width: 28%; aspect-ratio: 1; left: 24%; bottom: -6%;
+  background: radial-gradient(circle at 62% 30%, var(--white) 0 16%, var(--sand-300) 16.5%);
+}
+
+.pic {
+  margin: 0; z-index: 2;
+  border-radius: 22px; overflow: hidden;
+  background: var(--white);
+  box-shadow: 0 30px 50px -24px rgba(42, 27, 74, .5);
+  img { width: 100%; height: 100%; object-fit: cover; will-change: transform; }
+}
+.pic-main {
+  width: 27%; aspect-ratio: 4 / 5; left: 50%; top: 30%; margin-left: -13.5%;
+  transform: rotate(-4deg);
+  z-index: 3;
+  picture { display: block; width: 100%; height: 100%; }
+  img { object-position: 50% 40%; transform: scale(1.06); }
+}
+.pic-l, .pic-r {
+  width: 19%; aspect-ratio: 4 / 5;
+  img { object-fit: contain; padding: 8%; }
+}
+.pic-l { left: 25%; top: 18%; transform: rotate(-18deg); }
+.pic-r { right: 22%; top: 0; transform: rotate(14deg); }
+
+/* ---------- Texto ---------- */
+.copy { position: relative; z-index: 2; max-width: 560px; will-change: transform, opacity; }
+
+h1 {
+  font-size: clamp(2.6rem, 6vw, 4.2rem);
+  font-weight: 700;
+  letter-spacing: -.02em;
+  line-height: 1.05;
+  margin-bottom: 14px;
+}
+
+.lead { font-size: clamp(.9rem, 1.2vw, .98rem); font-weight: 500; color: var(--ink-700); margin: 0 auto 30px; max-width: 480px; }
+
+.ctas { display: flex; align-items: center; justify-content: center; gap: 18px; flex-wrap: wrap; }
+.ctas .btn { min-width: 172px; }

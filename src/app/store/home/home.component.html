@@ -1,0 +1,167 @@
+<app-hero [fotos]="fotosHero()" />
+
+<!-- Beneficios -->
+<section class="perks" aria-label="Por qué comprarnos">
+  <span class="deco deco-ring perks-ring" aria-hidden="true"></span>
+  <div class="container">
+    <ul class="perks-list">
+      @for (b of beneficios; track b.titulo) {
+        <li class="perk reveal">
+          <span class="perk-ico" [attr.data-tono]="b.tono" aria-hidden="true"><lucide-icon [img]="b.icono" [size]="26" [strokeWidth]="1.8" /></span>
+          <strong>{{ b.titulo }}</strong>
+          <small>{{ b.texto }}</small>
+        </li>
+      }
+    </ul>
+  </div>
+</section>
+
+<!-- Nuestras líneas (zigzag numerado) -->
+@if (lineas().length) {
+  <section class="section lines" id="lineas" aria-labelledby="lineas-t">
+    <div class="container">
+      <div class="section-head center reveal"><h2 id="lineas-t">Nuestras líneas</h2></div>
+
+      @for (m of lineas(); track m.id; let k = $index; let par = $even) {
+        <article class="line reveal-late" [class.flip]="!par">
+          <div class="line-visual" [attr.data-tono]="k % 4" aria-hidden="true">
+            <span class="blob"></span>
+            <span class="half"></span>
+            <span class="dot d1"></span>
+            <span class="dot d2"></span>
+            <svg class="zig" viewBox="0 0 120 24"><path d="M2 20 14 4l12 16L38 4l12 16L62 4l12 16L86 4l12 16 12-16" fill="none" stroke="currentColor" stroke-width="3" stroke-linejoin="round" stroke-linecap="round" /></svg>
+            @if (imagenDe(m); as src) {
+              <img class="line-img" [src]="src" alt="" loading="lazy" />
+            } @else {
+              <div class="line-img ph"><lucide-icon [img]="i.GlassWater" [size]="64" [strokeWidth]="1.2" /></div>
+            }
+          </div>
+          <div class="line-copy">
+            <span class="num" aria-hidden="true">{{ (k + 1).toString().padStart(2, '0') }}</span>
+            <h3>{{ m.nombre }}</h3>
+            <p>{{ descripcionLinea(m.nombre) }}</p>
+            <a class="btn btn-dark btn-sm" [routerLink]="['/tienda']" [queryParams]="{ marca: m.id }">Ver productos</a>
+          </div>
+        </article>
+      }
+    </div>
+  </section>
+}
+
+<!-- Productos destacados -->
+<section class="section featured" id="productos" aria-labelledby="prod-t">
+  <div class="container">
+    <div class="feat-head reveal">
+      <div>
+        <span class="eyebrow">Tienda</span>
+        <h2 id="prod-t">Nuestros productos</h2>
+      </div>
+      <a routerLink="/tienda" class="btn btn-light btn-sm">Ver todo <lucide-icon [img]="i.ArrowRight" [size]="16" /></a>
+    </div>
+
+    @if (cargando()) {
+      <div class="feat-grid">
+        @for (s of [1, 2, 3, 4]; track s) {
+          <div class="prod-skel"><div class="skeleton img"></div><div class="skeleton t1"></div><div class="skeleton t2"></div></div>
+        }
+      </div>
+    } @else if (error()) {
+      <div class="alert alert-warning">
+        <lucide-icon [img]="i.AlertTriangle" [size]="20" />
+        <p><strong>No pudimos cargar los productos</strong>Probá recargar la página en unos segundos.</p>
+      </div>
+    } @else if (destacados().length === 0) {
+      <p class="muted">Muy pronto vas a encontrar acá nuestros productos.</p>
+    } @else {
+      <div class="feat-grid">
+        @for (p of destacados(); track p.id) {
+          <app-product-card class="grid-item" [producto]="p" />
+        }
+      </div>
+    }
+  </div>
+</section>
+
+<!-- El mejor sabor -->
+<section class="section taste" aria-labelledby="taste-t">
+  <div class="container taste-grid">
+    <div class="taste-media reveal" aria-hidden="true">
+      <span class="frame-line"></span>
+      <div class="taste-card">
+        <span class="taste-brand">Kumquat</span>
+        <img class="parallax-img" src="img/kumquat-hero.webp" alt="" loading="lazy" />
+      </div>
+    </div>
+    <div class="taste-copy reveal">
+      <h2 id="taste-t">Te acercamos el mejor sabor de Entre Ríos</h2>
+      <p>
+        Hacemos cócteles y bebidas listos para servir, pensados para bares, restaurantes, almacenes y eventos.
+        Menos tiempo de preparación detrás de la barra, la misma calidad en cada vaso.
+      </p>
+      <a routerLink="/tienda" class="link-more">Conocé la tienda <lucide-icon [img]="i.ArrowRight" [size]="16" /></a>
+    </div>
+  </div>
+</section>
+
+<!-- Cómo comprar (tarjetas apiladas) -->
+<section class="section how" id="como-comprar" aria-labelledby="how-t">
+  <span class="deco deco-sand how-blob" aria-hidden="true"></span>
+  <div class="container how-grid">
+    <div class="how-copy reveal">
+      <span class="eyebrow">Cómo comprar</span>
+      <h2 id="how-t">Pedir es así de simple</h2>
+      <p>Cuatro pasos, sin registrarte y con pago seguro. Tocá las tarjetas para ver cada uno.</p>
+      <div class="how-nav">
+        <button type="button" class="nav-arrow" (click)="moverPaso(-1)" aria-label="Paso anterior"><lucide-icon [img]="i.ArrowLeft" [size]="16" /></button>
+        <span class="how-count" aria-live="polite">Paso {{ paso() + 1 }} de {{ pasos.length }}</span>
+        <button type="button" class="nav-arrow" (click)="moverPaso(1)" aria-label="Paso siguiente"><lucide-icon [img]="i.ArrowRight" [size]="16" /></button>
+      </div>
+      <a routerLink="/tienda" class="link-more">Empezar mi pedido <lucide-icon [img]="i.ArrowRight" [size]="16" /></a>
+    </div>
+
+    <div class="stack-cards reveal">
+      @for (s of pasos; track s.titulo; let k = $index) {
+        <button type="button" class="step-card" [attr.data-o]="orden(k)" [attr.aria-hidden]="orden(k) !== 0" [tabindex]="orden(k) === 0 ? 0 : -1"
+          (click)="moverPaso(1)" [attr.aria-label]="'Paso ' + (k + 1) + ': ' + s.titulo + '. Ver siguiente paso'">
+          <p class="step-text">{{ s.texto }}</p>
+          <span class="step-who">
+            <span class="step-ico"><lucide-icon [img]="s.icono" [size]="18" /></span>
+            <span><strong>{{ s.titulo }}</strong><small>Paso {{ k + 1 }} de {{ pasos.length }}</small></span>
+          </span>
+          <span class="step-dots" aria-hidden="true">
+            @for (x of pasos; track x.titulo; let j = $index) { <span [class.on]="j <= k"></span> }
+          </span>
+        </button>
+      }
+    </div>
+  </div>
+</section>
+
+<!-- Preguntas frecuentes -->
+<section class="section faq" id="preguntas" aria-labelledby="faq-t">
+  <div class="container faq-grid">
+    <div class="faq-head reveal">
+      <span class="eyebrow">Ayuda</span>
+      <h2 id="faq-t">Preguntas frecuentes</h2>
+      <p>¿Tenés otra duda? Escribinos por Instagram y te respondemos.</p>
+      <a class="btn btn-dark" href="https://instagram.com/cantinerosentrerrianos" target="_blank" rel="noopener">
+        <lucide-icon [img]="i.Instagram" [size]="16" /> Escribinos
+      </a>
+    </div>
+    <ul class="faq-list">
+      @for (f of faqs; track f.q; let k = $index) {
+        <li class="faq-item reveal" [class.open]="faqAbierta() === k">
+          <h3>
+            <button type="button" [attr.aria-expanded]="faqAbierta() === k" [attr.aria-controls]="'faq-' + k" (click)="toggleFaq(k)">
+              <span>{{ f.q }}</span>
+              <span class="plus" aria-hidden="true"><lucide-icon [img]="i.Plus" [size]="16" /></span>
+            </button>
+          </h3>
+          <div class="answer" [id]="'faq-' + k" role="region">
+            <div><p>{{ f.a }}</p></div>
+          </div>
+        </li>
+      }
+    </ul>
+  </div>
+</section>

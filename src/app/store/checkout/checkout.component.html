@@ -1,0 +1,170 @@
+<div class="container page">
+  @if (paso() !== 'resultado') {
+    <a routerLink="/carrito" class="back"><lucide-icon [img]="i.ArrowLeft" [size]="16" /> Volver al pedido</a>
+    <h1>Finalizar compra</h1>
+
+    <ol class="stepper" aria-label="Pasos de la compra">
+      <li [class.done]="paso() === 'pago'" [class.current]="paso() === 'datos'" [attr.aria-current]="paso() === 'datos' ? 'step' : null">
+        <span class="dot">@if (paso() === 'pago') { <lucide-icon [img]="i.Check" [size]="14" /> } @else { 1 }</span> Tus datos
+      </li>
+      <li class="bar" aria-hidden="true"></li>
+      <li [class.current]="paso() === 'pago'" [attr.aria-current]="paso() === 'pago' ? 'step' : null">
+        <span class="dot">2</span> Pago
+      </li>
+    </ol>
+  }
+
+  @switch (paso()) {
+    @case ('datos') {
+      <div class="layout" @step>
+        <form class="card form" [formGroup]="form" (ngSubmit)="continuar()" novalidate>
+          <h2>¿A quién le entregamos?</h2>
+          <p class="muted">Usamos estos datos para coordinar la entrega. El email y el DNI te los pide Mercado Pago en el siguiente paso.</p>
+
+          <div class="field">
+            <label for="nombre">Nombre y apellido o razón social</label>
+            <div class="input-icon"><lucide-icon [img]="i.User" [size]="18" />
+              <input id="nombre" class="input" formControlName="nombre" autocomplete="name" [attr.aria-invalid]="campoInvalido('nombre')" aria-describedby="nombre-err" /></div>
+            @if (campoInvalido('nombre')) {
+              <span class="error" id="nombre-err"><lucide-icon [img]="i.AlertCircle" [size]="14" />
+                {{ form.controls.nombre.hasError('maxlength') ? 'Máximo 200 caracteres.' : 'Ingresá tu nombre.' }}</span>
+            }
+          </div>
+
+          <div class="field">
+            <label for="telefono">Teléfono</label>
+            <div class="input-icon"><lucide-icon [img]="i.Phone" [size]="18" />
+              <input id="telefono" class="input" type="tel" inputmode="tel" formControlName="telefono" autocomplete="tel" placeholder="Ej: 343 4123456" [attr.aria-invalid]="campoInvalido('telefono')" aria-describedby="tel-hint tel-err" /></div>
+            <span class="hint" id="tel-hint">Con código de área, para coordinar la entrega.</span>
+            @if (campoInvalido('telefono')) {
+              <span class="error" id="tel-err"><lucide-icon [img]="i.AlertCircle" [size]="14" />
+                {{ form.controls.telefono.hasError('required') ? 'Ingresá un teléfono.' : 'Ingresá un teléfono válido (solo números, espacios, + o guiones).' }}</span>
+            }
+          </div>
+
+          <div class="field">
+            <label for="direccion">Dirección de entrega</label>
+            <div class="input-icon"><lucide-icon [img]="i.MapPin" [size]="18" />
+              <input id="direccion" class="input" formControlName="direccion" autocomplete="street-address" placeholder="Calle, número, ciudad" [attr.aria-invalid]="campoInvalido('direccion')" aria-describedby="dir-err" /></div>
+            @if (campoInvalido('direccion')) {
+              <span class="error" id="dir-err"><lucide-icon [img]="i.AlertCircle" [size]="14" />
+                {{ form.controls.direccion.hasError('maxlength') ? 'Máximo 300 caracteres.' : 'Ingresá la dirección de entrega.' }}</span>
+            }
+          </div>
+
+          <button type="submit" class="btn btn-primary btn-lg btn-block">Continuar al pago <lucide-icon [img]="i.ArrowRight" [size]="18" /></button>
+        </form>
+
+        <ng-container *ngTemplateOutlet="resumen" />
+      </div>
+    }
+
+    @case ('pago') {
+      <div class="layout" @step>
+        <div class="card form">
+          <div class="pay-head">
+            <h2>Pagá con tarjeta</h2>
+            <span class="mp-badge"><lucide-icon [img]="i.Lock" [size]="14" /> Mercado Pago</span>
+          </div>
+
+          @if (!pendiente()) {
+            <div class="who">
+              <lucide-icon [img]="i.MapPin" [size]="18" />
+              <div><strong>{{ form.controls.nombre.value }}</strong><span>{{ form.controls.direccion.value }} · {{ form.controls.telefono.value }}</span></div>
+              <button type="button" class="btn btn-ghost btn-sm" (click)="volverADatos()">Editar</button>
+            </div>
+          } @else {
+            <div class="alert alert-info">
+              <lucide-icon [img]="i.Receipt" [size]="20" />
+              <p><strong>Pedido #{{ pendiente()!.pedidoId }}</strong>
+                @if (pendiente()!.expira) { Podés reintentar el pago hasta las {{ pendiente()!.expira | date: 'HH:mm' }} hs. }
+                @else { Reintentá el pago con la misma u otra tarjeta. }
+              </p>
+            </div>
+          }
+
+          @if (error(); as e) {
+            <div class="alert alert-danger" role="alert">
+              <lucide-icon [img]="i.AlertCircle" [size]="20" />
+              <p><strong>{{ e.titulo }}</strong>{{ e.mensaje }}</p>
+            </div>
+          }
+
+          @if (!mp.configurado) {
+            <div class="alert alert-warning">
+              <lucide-icon [img]="i.AlertTriangle" [size]="20" />
+              <p><strong>Falta configurar Mercado Pago</strong>Cargá la Public Key en <code>src/environments/environment*.ts</code> (mercadoPagoPublicKey).</p>
+            </div>
+          }
+
+          <div class="brick-wrap" [class.busy]="procesando()">
+            @if (mp.configurado && !brickListo()) {
+              <div class="brick-sk">
+                <div class="skeleton" style="height:46px"></div>
+                <div class="row"><div class="skeleton grow" style="height:46px"></div><div class="skeleton grow" style="height:46px"></div></div>
+                <div class="skeleton" style="height:46px"></div>
+                <div class="skeleton" style="height:52px;border-radius:999px"></div>
+              </div>
+            }
+            <div id="brick-container"></div>
+            @if (procesando()) {
+              <div class="overlay" role="status"><span class="spinner"></span> Procesando el pago…</div>
+            }
+          </div>
+
+          <p class="secure"><lucide-icon [img]="i.ShieldCheck" [size]="16" /> Los datos de tu tarjeta van directo a Mercado Pago: nunca pasan por nuestro sistema.</p>
+
+          @if (pendiente()) {
+            <button type="button" class="btn btn-ghost btn-sm cancel" (click)="descartarPendiente()">Descartar este pedido y empezar de nuevo</button>
+          }
+        </div>
+
+        <ng-container *ngTemplateOutlet="resumen" />
+      </div>
+    }
+
+    @case ('resultado') {
+      @if (resultado(); as r) {
+        <div class="result card" @step>
+          <div class="badge-big" [class.warn]="r.estado === 'revision'" @pop>
+            <lucide-icon [img]="r.estado === 'aprobado' ? i.CheckCircle2 : i.Clock" [size]="44" />
+          </div>
+          @if (r.estado === 'aprobado') {
+            <h1>¡Gracias por tu compra!</h1>
+            <p class="lead">Recibimos el pago de tu pedido <strong>#{{ r.pedidoId }}</strong>. Te mandamos el detalle por mail y nos vamos a comunicar con vos para coordinar la entrega.</p>
+          } @else {
+            <h1>Tu pago está en revisión</h1>
+            <p class="lead">Mercado Pago está revisando el pago de tu pedido <strong>#{{ r.pedidoId }}</strong>. Te avisamos por mail apenas se acredite; tu mercadería queda reservada.</p>
+          }
+          <ul class="res-items">
+            @for (it of r.items; track it.nombre) {
+              <li><span>{{ it.packs }} × {{ it.nombre }}</span><span>{{ it.subtotal | ars }}</span></li>
+            }
+            <li class="tot"><span>Total</span><span>{{ r.total | ars }}</span></li>
+          </ul>
+          <a routerLink="/tienda" class="btn btn-primary btn-lg">Seguir comprando</a>
+        </div>
+      }
+    }
+  }
+</div>
+
+<ng-template #resumen>
+  <aside class="card summary">
+    <h2>Tu pedido</h2>
+    <ul>
+      @for (it of items(); track it.productoId) {
+        <li>
+          <span class="thumb">
+            @if (it.imagen) { <img [src]="it.imagen" [alt]="it.nombre" /> } @else { <lucide-icon [img]="i.GlassWater" [size]="20" /> }
+            <span class="qty">{{ it.packs }}</span>
+          </span>
+          <span class="n"><strong>{{ it.nombre }}</strong><small>{{ it.unidadesPorPack > 1 ? 'Pack x' + it.unidadesPorPack : 'Unidad' }}</small></span>
+          <span class="p">{{ it.packs * it.precioPack | ars }}</span>
+        </li>
+      }
+    </ul>
+    <div class="tot"><span>Total</span><strong>{{ total() | ars }}</strong></div>
+    <p class="muted small">El total final lo calcula el sistema con los precios vigentes al pagar.</p>
+  </aside>
+</ng-template>
