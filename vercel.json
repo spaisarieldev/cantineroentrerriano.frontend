@@ -5,10 +5,10 @@
   "buildCommand": "npm run build",
   "outputDirectory": "dist/cantinero-front",
   "redirects": [
-    { "source": "/", "destination": "/cantineroentrerriano/", "permanent": false },
-    { "source": "/cantineroentrerriano", "destination": "/cantineroentrerriano/", "permanent": false }
+    { "source": "/", "destination": "/cantinero/", "permanent": false },
+    { "source": "/cantinero", "destination": "/cantinero/", "permanent": false }
   ],
   "rewrites": [
-    { "source": "/cantineroentrerriano/(.*)", "destination": "/cantineroentrerriano/index.html" }
+    { "source": "/cantinero/(.*)", "destination": "/cantinero/index.html" }
   ]
 }
