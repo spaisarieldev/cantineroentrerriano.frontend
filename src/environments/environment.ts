@@ -1,4 +1,4 @@
-// Producción: el front y la API se sirven bajo el mismo dominio (Nginx), así la cookie
+// Producción: el front y la API se sirven bajo el mismo dominio (rewrites de Vercel a Render), así la cookie
 // del refresh token (SameSite=Strict, Path=/api/v1/auth) viaja sin problemas.
 export const environment = {
   production: true,
